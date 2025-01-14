@@ -85,7 +85,7 @@ class Agent():
         num_actions = env.action_space.n
 
         # Get observation space size
-        num_states = env.observation_space.shape[0] # Expecting type: Box(low, high, (shape0,), float64)
+        num_states = env.observation_space.shape[0] # Expecting type: Box(low, high, (shape0,), float64) # TODO change when implement CNN
 
         # List to keep track of rewards collected per episode.
         rewards_per_episode = []
@@ -102,7 +102,7 @@ class Agent():
 
             # Create the target network and make it identical to the policy network
             target_dqn = CDQN(num_states, num_actions, self.fc1_nodes, self.enable_double_dqn).to(device)
-            target_dqn.load_state_dict(policy_dqn.state_dict())
+            target_dqn.load_state_dict(policy_dqn.state_dict()) # Copy policy network weights and biases to target network
 
             # Policy network optimizer. "Adam" optimizer can be swapped to something else.
             self.optimizer = torch.optim.Adam(policy_dqn.parameters(), lr=self.learning_rate_a)
@@ -114,7 +114,7 @@ class Agent():
             step_count=0
 
             # Track best reward
-            best_reward = -9999999
+            best_reward = -float("inf")
         else:
             # Load learned policy
             policy_dqn.load_state_dict(torch.load(self.MODEL_FILE))
@@ -149,7 +149,7 @@ class Agent():
                         action = policy_dqn(state.unsqueeze(dim=0)).squeeze().argmax()
 
                 # Execute action. Truncated and info is not used.
-                new_state,reward,terminated,truncated,info = env.step(action.item())
+                new_state, reward, terminated, truncated, info = env.step(action.item())
 
                 # Accumulate rewards
                 episode_reward += reward
@@ -163,7 +163,22 @@ class Agent():
                     memory.append((state, action, new_state, reward, terminated))
 
                     # Increment step counter
-                    step_count+=1
+                    step_count += 1
+
+                    # Update network weights throughout episode
+                    if len(memory) > self.mini_batch_size:
+                    #   for _ in range(3):  # Number of optimizations per step
+                        mini_batch = memory.sample(self.mini_batch_size)
+                        self.optimize(mini_batch, policy_dqn, target_dqn)
+
+                        # Decay epsilon
+                        epsilon = max(epsilon * self.epsilon_decay, self.epsilon_min)
+                        epsilon_history.append(epsilon)
+
+                    # Sync policy to target network periodically
+                    if step_count > self.network_sync_rate:
+                        target_dqn.load_state_dict(policy_dqn.state_dict()) # TODO should this be only for dqn, not double or dueling?
+                        step_count = 0
 
                 # Move to the next state
                 state = new_state
@@ -251,18 +266,20 @@ class Agent():
             if self.enable_double_dqn:
                 best_actions_from_policy = policy_dqn(new_states).argmax(dim=1)
 
-                target_q = rewards + (1-terminations) * self.discount_factor_g * \
+                # (1 - terminations) because termination is 0 or 1. This replaces the conditional for different equations
+                # Calculate target Q values (expected returns) for double dqn
+                target_q = rewards + (1 - terminations) * self.discount_factor_g * \
                                 target_dqn(new_states).gather(dim=1, index=best_actions_from_policy.unsqueeze(dim=1)).squeeze()
             else:
-                # Calculate target Q values (expected returns)
-                target_q = rewards + (1-terminations) * self.discount_factor_g * target_dqn(new_states).max(dim=1)[0]
+                # Calculate target Q values (expected returns) for dqn
+                target_q = rewards + (1 - terminations) * self.discount_factor_g * target_dqn(new_states).max(dim=1)[0]
                 '''
                     target_dqn(new_states)  ==> tensor([[1,2,3],[4,5,6]])
                         .max(dim=1)         ==> torch.return_types.max(values=tensor([3,6]), indices=tensor([3, 0, 0, 1]))
                             [0]             ==> tensor([3,6])
                 '''
 
-        # Calcuate Q values from current policy
+        # Calculate Q values from current policy
         current_q = policy_dqn(states).gather(dim=1, index=actions.unsqueeze(dim=1)).squeeze()
         '''
             policy_dqn(states)  ==> tensor([[1,2,3],[4,5,6]])

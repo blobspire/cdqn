@@ -14,11 +14,11 @@ class CDQN(nn.Module):
 
         if self.enable_dueling_dqn:
             # Value stream
-            self.fc_value = nn.Linear(hidden_dim, 256)
+            self.fc_value = nn.Linear(hidden_dim, 256) # TODO what should i set number of nodes to instead of hardcoding
             self.value = nn.Linear(256, 1)
 
             # Advantages stream
-            self.fc_advantages = nn.Linear(hidden_dim, 256)
+            self.fc_advantages = nn.Linear(hidden_dim, 256) # TODO likewise
             self.advantages = nn.Linear(256, action_dim)
 
         else:

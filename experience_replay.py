@@ -11,9 +11,12 @@ class ReplayMemory():
         if seed is not None:
             random.seed(seed)
 
+    # Add experience to memory
+    # transition = (state, action, reward, next_state, terminated)
     def append(self, transition):
         self.memory.append(transition)
 
+    # Sample from memory of batch size sample_size
     def sample(self, sample_size):
         return random.sample(self.memory, sample_size)
 
