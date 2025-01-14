@@ -19,6 +19,8 @@ import itertools
 import flappy_bird_gymnasium
 import os
 
+from frame_stack import FrameStack, preprocess_frame
+
 # For printing date and time
 DATE_FORMAT = "%m-%d %H:%M:%S"
 
@@ -57,6 +59,10 @@ class Agent():
         self.fc1_nodes          = hyperparameters['fc1_nodes']
         self.env_make_params    = hyperparameters.get('env_make_params',{}) # Get optional environment-specific parameters, default to empty dict
         self.enable_double_dqn  = hyperparameters['enable_double_dqn']      # double dqn on/off flag
+        self.enable_dueling_dqn = hyperparameters['enable_dueling_dqn']     # dueling dqn on/off flag
+        self.render_train       = hyperparameters['render_train']           # how to render when training
+        self.render_watch       = hyperparameters['render_watch']           # how to render when watching
+        self.num_frames         = hyperparameters.get('num_frames')         # number of frames in the frame stack
 
         # Neural Network
         self.loss_fn = nn.MSELoss()          # NN Loss function. MSE=Mean Squared Error can be swapped to something else.
@@ -79,7 +85,7 @@ class Agent():
 
         # Create instance of the environment.
         # Use "**self.env_make_params" to pass in environment-specific parameters from hyperparameters.yml.
-        env = gym.make(self.env_id, render_mode='human' if render else None, **self.env_make_params)
+        env = gym.make(self.env_id, render_mode=self.render_watch if render else self.render_train, **self.env_make_params)
 
         # Number of possible actions
         num_actions = env.action_space.n
@@ -90,8 +96,12 @@ class Agent():
         # List to keep track of rewards collected per episode.
         rewards_per_episode = []
 
+        frame_stack = FrameStack(stack_size=self.num_frames)
+
+        input_shape = (self.num_frames, 84, 84) # num of frames, height, width in pixels
+
         # Create policy and target network. Number of nodes in the hidden layer can be adjusted.
-        policy_dqn = CDQN(num_states, num_actions, self.fc1_nodes, self.enable_double_dqn).to(device)
+        policy_dqn = CDQN(input_shape, num_actions, self.fc1_nodes, self.enable_dueling_dqn).to(device)
 
         if is_training:
             # Initialize epsilon
@@ -101,7 +111,7 @@ class Agent():
             memory = ReplayMemory(self.replay_memory_size)
 
             # Create the target network and make it identical to the policy network
-            target_dqn = CDQN(num_states, num_actions, self.fc1_nodes, self.enable_double_dqn).to(device)
+            target_dqn = CDQN(input_shape, num_actions, self.fc1_nodes, self.enable_dueling_dqn).to(device)
             target_dqn.load_state_dict(policy_dqn.state_dict()) # Copy policy network weights and biases to target network
 
             # Policy network optimizer. "Adam" optimizer can be swapped to something else.
@@ -126,6 +136,8 @@ class Agent():
         for episode in itertools.count():
 
             state, _ = env.reset()  # Initialize environment. Reset returns (state,info).
+            state = preprocess_frame(state) # Preprocess initial frame
+            state = frame_stack.reset(state) # Populate frame stack with initial frame
             state = torch.tensor(state, dtype=torch.float, device=device) # Convert state to tensor directly on device
 
             terminated = False      # True when agent reaches goal or fails
@@ -149,7 +161,10 @@ class Agent():
                         action = policy_dqn(state.unsqueeze(dim=0)).squeeze().argmax()
 
                 # Execute action. Truncated and info is not used.
-                new_state, reward, terminated, truncated, info = env.step(action.item())
+                new_frame, reward, terminated, truncated, info = env.step(action.item())
+                new_frame = preprocess_frame(new_frame)
+                new_state = frame_stack.append(new_frame)
+                new_state = torch.tensor(new_state, dtype=torch.float, device=device)
 
                 # Accumulate rewards
                 episode_reward += reward

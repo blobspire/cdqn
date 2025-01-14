@@ -2,6 +2,8 @@
 
 from collections import deque
 import random
+from frame_stack import preprocess_frame
+
 
 class ReplayMemory():
     def __init__(self, maxlen, seed=None):

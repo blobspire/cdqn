@@ -5,12 +5,22 @@ import torch.nn.functional as F
 class CDQN(nn.Module):
 
 
-    def __init__(self, state_dim, action_dim, hidden_dim=256, enable_dueling_dqn=True):
+    def __init__(self, input_shape, action_dim, hidden_dim=256, enable_dueling_dqn=True):
         super(CDQN, self).__init__()
 
         self.enable_dueling_dqn=enable_dueling_dqn
 
-        self.fc1 = nn.Linear(state_dim, hidden_dim)
+        # Convolutional layers
+        self.conv1 = nn.Conv2d(input_shape[0], 32, kernel_size=8, stride=4)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=4, stride=2)
+        self.conv3 = nn.Conv2d(64, 64, kernel_size=3, stride=1)
+
+        # Flatten layer
+        self.flatten = nn.Flatten()
+
+        # Fully connected layers
+        conv_out_size = 64 * 7 * 7 # TODO parameterize
+        self.fc1 = nn.Linear(conv_out_size, hidden_dim)
 
         if self.enable_dueling_dqn:
             # Value stream
@@ -26,6 +36,15 @@ class CDQN(nn.Module):
 
 
     def forward(self, x):
+        # Convolutional layers
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = F.relu(self.conv3(x))
+
+        # Flatten layer
+        x = self.flatten(x)
+
+        # Fully connected layers
         x = F.relu(self.fc1(x))
 
         if self.enable_dueling_dqn:

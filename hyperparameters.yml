@@ -18,7 +18,7 @@ flappybird1:
   replay_memory_size: 100000
   mini_batch_size: 32
   epsilon_init: 1
-  epsilon_decay: 0.99_99_5
+  epsilon_decay: 0.99995
   epsilon_min: 0.05
   network_sync_rate: 10
   learning_rate_a: 0.0001
@@ -35,7 +35,7 @@ flappybird2:
   replay_memory_size: 100000
   mini_batch_size: 32
   epsilon_init: 0.00001
-  epsilon_decay: 0.99_99_5
+  epsilon_decay: 0.99995
   epsilon_min: 0.05
   network_sync_rate: 10
   learning_rate_a: 0.0001
@@ -52,7 +52,7 @@ flappybird3:
   replay_memory_size: 100000
   mini_batch_size: 32
   epsilon_init: 0.1
-  epsilon_decay: 0.99_99_5
+  epsilon_decay: 0.99995
   epsilon_min: 0.00001
   network_sync_rate: 10
   learning_rate_a: 0.0001
@@ -64,29 +64,52 @@ flappybird3:
   enable_double_dqn: True
   enable_dueling_dqn: True
 
-flappybird4:
+flappybirdCNN1:
   env_id: FlappyBird-v0
-  replay_memory_size: 100000
-  mini_batch_size: 32
-  epsilon_init: 0.1
-  epsilon_decay: 0.99_99_5
+  replay_memory_size: 200000
+  mini_batch_size: 64
+  epsilon_init: 1
+  epsilon_decay: 0.99995
   epsilon_min: 0.00001
   network_sync_rate: 10
   learning_rate_a: 0.0001
   discount_factor_g: 0.99
-  stop_on_reward: 10000
+  stop_on_reward: 1000
   fc1_nodes: 512
   env_make_params:
     use_lidar: False
   enable_double_dqn: True
   enable_dueling_dqn: True
+  render_train: rgb_array
+  render_watch: human
+  num_frames: 4
+
+flappybirdCNN2:
+  env_id: FlappyBird-v0
+  replay_memory_size: 200000
+  mini_batch_size: 64
+  epsilon_init: 1
+  epsilon_decay: 0.99995
+  epsilon_min: 0.00001
+  network_sync_rate: 500
+  learning_rate_a: 0.00001
+  discount_factor_g: 0.99
+  stop_on_reward: 1000
+  fc1_nodes: 512
+  env_make_params:
+    use_lidar: False
+  enable_double_dqn: True
+  enable_dueling_dqn: True
+  render_train: rgb_array
+  render_watch: human
+  num_frames: 4
 
 pong1:
   env_id: Pong-v0
   replay_memory_size: 100000
   mini_batch_size: 32
   epsilon_init: 1
-  epsilon_decay: 0.99_99_5
+  epsilon_decay: 0.99995
   epsilon_min: 0.01
   network_sync_rate: 10
   learning_rate_a: 0.0001
