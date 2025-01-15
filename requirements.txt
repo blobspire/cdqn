@@ -1,0 +1,8 @@
+gymnasium[atari,accept-rom-license]     # For Gym environments and Atari ROM support
+ale-py                                  # Arcade Learning Environment backend
+flappy-bird-gymnasium                   # Flappy Bird Gymnasium environment
+numpy                                   # For numerical computations
+opencv-python-headless                  # For frame preprocessing without GUI support
+matplotlib                              # For plotting rewards and training graphs
+pyyaml                                  # For reading hyperparameters.yml
+torch                                   # PyTorch for deep learning
