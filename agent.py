@@ -1,4 +1,6 @@
 import gymnasium as gym
+import ale_py
+import flappy_bird_gymnasium
 import numpy as np
 
 import matplotlib
@@ -16,7 +18,6 @@ from datetime import datetime, timedelta
 import argparse
 import itertools
 
-import flappy_bird_gymnasium
 import os
 
 from frame_stack import FrameStack, preprocess_frame
@@ -33,6 +34,9 @@ matplotlib.use('Agg')
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 device = 'cpu' # force cpu, sometimes GPU not always faster than CPU due to overhead of moving data to GPU
+
+# Register ALE environments with Gymnasium
+gym.register_envs(ale_py)
 
 # Deep Q-Learning Agent
 class Agent():
@@ -90,9 +94,6 @@ class Agent():
         # Number of possible actions
         num_actions = env.action_space.n
 
-        # Get observation space size
-        num_states = env.observation_space.shape[0] # Expecting type: Box(low, high, (shape0,), float64) # TODO change when implement CNN
-
         # List to keep track of rewards collected per episode.
         rewards_per_episode = []
 
@@ -139,6 +140,9 @@ class Agent():
             state = preprocess_frame(state) # Preprocess initial frame
             state = frame_stack.reset(state) # Populate frame stack with initial frame
             state = torch.tensor(state, dtype=torch.float, device=device) # Convert state to tensor directly on device
+            # TODO replace all these with:
+            # state = state.clone().detach()
+            # to avoid the user warning
 
             terminated = False      # True when agent reaches goal or fails
             episode_reward = 0.0    # Used to accumulate rewards per episode
@@ -182,7 +186,6 @@ class Agent():
 
                     # Update network weights throughout episode
                     if len(memory) > self.mini_batch_size:
-                    #   for _ in range(3):  # Number of optimizations per step
                         mini_batch = memory.sample(self.mini_batch_size)
                         self.optimize(mini_batch, policy_dqn, target_dqn)
 
@@ -190,10 +193,10 @@ class Agent():
                         epsilon = max(epsilon * self.epsilon_decay, self.epsilon_min)
                         epsilon_history.append(epsilon)
 
-                    # Sync policy to target network periodically
-                    if step_count > self.network_sync_rate:
-                        target_dqn.load_state_dict(policy_dqn.state_dict()) # TODO should this be only for dqn, not double or dueling?
-                        step_count = 0
+                        # Sync policy to target network periodically
+                        if step_count > self.network_sync_rate:
+                            target_dqn.load_state_dict(policy_dqn.state_dict()) # TODO should this be only for dqn, not double or dueling?
+                            step_count = 0
 
                 # Move to the next state
                 state = new_state
@@ -218,20 +221,6 @@ class Agent():
                 if current_time - last_graph_update_time > timedelta(seconds=10):
                     self.save_graph(rewards_per_episode, epsilon_history)
                     last_graph_update_time = current_time
-
-                # If enough experience has been collected
-                if len(memory)>self.mini_batch_size:
-                    mini_batch = memory.sample(self.mini_batch_size)
-                    self.optimize(mini_batch, policy_dqn, target_dqn)
-
-                    # Decay epsilon
-                    epsilon = max(epsilon * self.epsilon_decay, self.epsilon_min)
-                    epsilon_history.append(epsilon)
-
-                    # Copy policy network to target network after a certain number of steps
-                    if step_count > self.network_sync_rate:
-                        target_dqn.load_state_dict(policy_dqn.state_dict())
-                        step_count=0
 
 
     def save_graph(self, rewards_per_episode, epsilon_history):

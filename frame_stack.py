@@ -21,6 +21,8 @@ class FrameStack:
 # Preprocess frame (decrease size and convert to grayscale)
 def preprocess_frame(frame):
     # Resize to 84x84 and convert to grayscale
+    if frame.ndim == 3 and frame.shape[2] == 3: # Only convert if RGB
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
     frame = cv2.resize(frame, (84, 84))
     # Normalize pixel values to [0, 1]
     frame = np.array(frame, dtype=np.float32) / 255.0
