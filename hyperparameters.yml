@@ -189,7 +189,7 @@ pongColab:
   learning_rate_a: 0.0001
   discount_factor_g: 0.99
   stop_on_reward: 1000
-  fc1_nodes: 256
+  fc1_nodes: 512
   enable_double_dqn: True
   enable_dueling_dqn: True
   render_train: rgb_array
@@ -207,7 +207,7 @@ pongRlogin:
   learning_rate_a: 0.0001
   discount_factor_g: 0.99
   stop_on_reward: 1000
-  fc1_nodes: 256
+  fc1_nodes: 512
   enable_double_dqn: True
   enable_dueling_dqn: True
   render_train: rgb_array
