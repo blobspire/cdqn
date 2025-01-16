@@ -213,3 +213,21 @@ pongRlogin:
   render_train: rgb_array
   render_watch: human
   num_frames: 4
+
+donkeykong:
+  env_id: ALE/DonkeyKong-v5
+  replay_memory_size: 1_000_000
+  mini_batch_size: 128
+  epsilon_init: 1.0
+  epsilon_decay: 0.9999
+  epsilon_min: 0.01
+  network_sync_rate: 1_000
+  learning_rate_a: 0.00025
+  discount_factor_g: 0.99
+  stop_on_reward: 1_000_000
+  fc1_nodes: 512
+  enable_double_dqn: True
+  enable_dueling_dqn: True
+  render_train: rgb_array
+  render_watch: human
+  num_frames: 4
