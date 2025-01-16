@@ -180,7 +180,7 @@ pong3:
 
 pong4:
   env_id: ALE/Pong-v5
-  replay_memory_size: 25_000
+  replay_memory_size: 20_000
   mini_batch_size: 128
   epsilon_init: 0.1
   epsilon_decay: 0.99995
